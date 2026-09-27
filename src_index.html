@@ -31,7 +31,29 @@ function updateUserBadge(){let a=JSON.parse(localStorage.getItem(ACCOUNT_KEY)||'
 function openAuth(mode='signup'){authMode=mode;go('auth');$('forgotBox').style.display='none';$('authTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('authSub').textContent=mode==='login'?'Log in to continue your Priorix study map.':'For this prototype, your account is stored only on this device. We will replace this with secure cloud accounts before public launch.';$('authBtn').textContent=mode==='login'?'LOG IN':'CREATE ACCOUNT';$('authToggle').textContent=mode==='login'?'Need an account? Sign up':'Already have an account? Log in';$('authMsg').textContent='';}
 function toggleAuth(){openAuth(authMode==='login'?'signup':'login')}
 function toggleForgot(show){$('forgotBox').style.display=show?'block':'none';$('authMsg').textContent='';if(show)$('resetEmail').focus()}
-function requestReset()async function submitAuth(){
+function requestReset()async function requestReset(){
+  let email=$('resetEmail').value.trim().toLowerCase();
+
+  if(!email){
+    $('authMsg').textContent='Enter your email first.';
+    return;
+  }
+
+  $('authMsg').textContent='Sending reset link...';
+
+  const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{
+    redirectTo:'https://priorixai.vercel.app/'
+  });
+
+  if(error){
+    $('authMsg').textContent=error.message;
+    return;
+  }
+
+  $('authMsg').textContent='If an account exists for this email, a password reset link has been sent.';
+}
+
+async function submitAuth(){
   let name=$('authName').value.trim();
   let email=$('authEmail').value.trim().toLowerCase();
   let pass=$('authPass').value;
@@ -59,7 +81,6 @@ function requestReset()async function submitAuth(){
 
     localStorage.setItem('priorixName',name);
     $('authMsg').textContent='Account created! Check your email to confirm your account.';
-
   }else{
     const {data,error}=await supabaseClient.auth.signInWithPassword({
       email,
