@@ -19,6 +19,81 @@ const SUPABASE_URL = "https://dbmccswlbhsfdtfwioeb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_eNxQIcUPOXe3GvnxqAv5zQ_IYsUtTo5";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const KEY='priorix_v3';const ACCOUNT_KEY='priorix_account_v3';let T=JSON.parse(localStorage.getItem(KEY)||'[]');let authMode='signup';
+supabaseClient.auth.onAuthStateChange((event, session)=>{
+  if(event!=='PASSWORD_RECOVERY') return;
+
+  const box=document.createElement('div');
+  box.id='passwordResetScreen';
+  box.style.cssText='position:fixed;inset:0;background:#fff;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,Arial,sans-serif;';
+
+  box.innerHTML=`
+    <div style="width:100%;max-width:420px;background:#fff;border:1px solid #eee;border-radius:24px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.12)">
+      <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#888;margin-bottom:10px">PRIORIX</div>
+      <h2 style="margin:0 0 8px;font-size:28px;color:#111">Set a new password</h2>
+      <p style="margin:0 0 24px;color:#777;line-height:1.5">Choose a new password for your Priorix account.</p>
+
+      <input id="newPassword"
+        type="password"
+        placeholder="New password"
+        style="width:100%;box-sizing:border-box;padding:14px;border:1px solid #ddd;border-radius:12px;margin-bottom:12px;font-size:15px">
+
+      <input id="confirmPassword"
+        type="password"
+        placeholder="Confirm new password"
+        style="width:100%;box-sizing:border-box;padding:14px;border:1px solid #ddd;border-radius:12px;margin-bottom:16px;font-size:15px">
+
+      <div id="resetMessage" style="font-size:14px;margin-bottom:12px;color:#d44"></div>
+
+      <button id="saveNewPassword"
+        style="width:100%;padding:14px;border:0;border-radius:12px;background:#111;color:#fff;font-weight:700;font-size:15px;cursor:pointer">
+        UPDATE PASSWORD
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(box);
+
+  $('saveNewPassword').onclick=async()=>{
+    const password=$('newPassword').value;
+    const confirm=$('confirmPassword').value;
+    const msg=$('resetMessage');
+
+    if(!password||!confirm){
+      msg.textContent='Please fill in both fields.';
+      return;
+    }
+
+    if(password!==confirm){
+      msg.textContent='Passwords do not match.';
+      return;
+    }
+
+    if(password.length<6){
+      msg.textContent='Password must be at least 6 characters.';
+      return;
+    }
+
+    $('saveNewPassword').disabled=true;
+    $('saveNewPassword').textContent='UPDATING...';
+    msg.textContent='';
+
+    const {error}=await supabaseClient.auth.updateUser({password});
+
+    if(error){
+      msg.textContent=error.message;
+      $('saveNewPassword').disabled=false;
+      $('saveNewPassword').textContent='UPDATE PASSWORD';
+      return;
+    }
+
+    msg.style.color='#198754';
+    msg.textContent='Password updated successfully!';
+
+    setTimeout(()=>{
+      window.location.href='https://priorixai.vercel.app/';
+    },1200);
+  };
+});
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(T));
 function go(id,push=true){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');if(push)history.pushState({screen:id},'',location.pathname+'#'+id);if(id==='map')renderTopics();if(id==='workload')renderWorkload();if(id==='priority')renderPriority();if(id==='plan')renderPlan();if(id==='dashboard')renderDashboard();updateUserBadge()}window.addEventListener('popstate',e=>{let id=e.state?.screen||location.hash.slice(1)||'home';if($(id))go(id,false)});
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
