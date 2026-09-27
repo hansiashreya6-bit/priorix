@@ -80,7 +80,6 @@ async function submitAuth(){
 
     localStorage.setItem('priorixName',name);
     $('authMsg').textContent='Account created! Check your email to confirm your account.';
-
   }else{
     const {data,error}=await supabaseClient.auth.signInWithPassword({
       email,
@@ -103,7 +102,7 @@ async function submitAuth(){
   }
 
   $('authBtn').disabled=false;
-}}
+}
 function renderTopics(){let active=T.filter(t=>!t.done);$('topics').innerHTML=active.length?active.map(t=>`<div class="card"><div class="topicrow"><div><div class="small">${esc(t.subject)}</div><div class="topicname">${esc(t.topic)}</div><div class="small">Exam in ${t.days} day(s) • ${t.hours}h • ${['','Easy','Medium','Hard'][t.diff]} • ${['','High','Medium','Low'][t.conf]}</div></div><button class="x" onclick="removeTopic(${t.id})">✕</button></div><div id="timer-map-${t.id}"></div><label class="checkrow"><input class="check" type="checkbox" onchange="done(${t.id})"><span>Mark as complete</span></label></div>`).join(''):'<div class="card empty"><b>No active topics yet.</b><div class="sub">Add your first topic above.</div></div>';let doneTopics=T.filter(t=>t.done);if(doneTopics.length)$('topics').innerHTML+=`<div class="pinkline"></div><div class="small" style="margin:12px 0 6px">COMPLETED</div>`+doneTopics.map(t=>`<div class="card donecard"><div class="topicrow"><div><div class="small">${esc(t.subject)}</div><div class="topicname">${esc(t.topic)}</div></div><button class="x" onclick="done(${t.id})">↶</button></div><label class="checkrow"><input class="check" type="checkbox" checked onchange="done(${t.id})"><span>Completed</span></label></div>`).join('')}
 let timers={};
 function formatTimer(sec){let m=Math.floor(sec/60),s=sec%60;return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
