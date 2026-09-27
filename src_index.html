@@ -12,7 +12,11 @@
 <section id="whatif" class="screen"><button class="back" onclick="go('plan')">← Today's plan</button><h1 class="h1">What If?</h1><p class="sub">Change your situation without changing your real study map.</p><div class="card"><label class="label">What if I have...</label><input id="ifHours" class="input" type="number" min="0.25" max="24" step="0.25" value="1"><div class="small">hours today</div><label class="label">What changes?</label><select id="ifChange" class="select"><option value="time">Only my available time changes</option><option value="deadline">My nearest exam is 1 day sooner</option><option value="finish">I finish my current #1 topic</option></select><button class="btn" onclick="runWhatIf()">RECALCULATE</button></div><div id="whatResult"></div></section>
 <section id="dashboard" class="screen"><h1 class="h1">My Priorix</h1><p class="sub">Your study picture at a glance.</p><div class="stats"><div class="stat"><div class="small">ACTIVE TOPICS</div><b id="dTopics">0</b></div><div class="stat"><div class="small">STUDY HOURS</div><b id="dHours">0</b></div><div class="stat"><div class="small">HIGH</div><b id="dHigh">0</b></div></div><div id="next"></div><button class="btn" onclick="go('map')">MANAGE STUDY MAP</button><button class="btn alt" onclick="go('priority')">VIEW PRIORITIES</button></section>
 <div class="footer">Priorix • v6 product build • Local prototype account • Secure cloud accounts come before public launch.</div></main>
+src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = "https://dbmccswlbhsfdtfwioeb.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_eNxQIcUPOXe3GvnxqAv5zQ_IYsUtTo5";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const KEY='priorix_v3';const ACCOUNT_KEY='priorix_account_v3';let T=JSON.parse(localStorage.getItem(KEY)||'[]');let authMode='signup';
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(T));
 function go(id,push=true){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');if(push)history.pushState({screen:id},'',location.pathname+'#'+id);if(id==='map')renderTopics();if(id==='workload')renderWorkload();if(id==='priority')renderPriority();if(id==='plan')renderPlan();if(id==='dashboard')renderDashboard();updateUserBadge()}window.addEventListener('popstate',e=>{let id=e.state?.screen||location.hash.slice(1)||'home';if($(id))go(id,false)});
@@ -27,8 +31,110 @@ function updateUserBadge(){let a=JSON.parse(localStorage.getItem(ACCOUNT_KEY)||'
 function openAuth(mode='signup'){authMode=mode;go('auth');$('forgotBox').style.display='none';$('authTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('authSub').textContent=mode==='login'?'Log in to continue your Priorix study map.':'For this prototype, your account is stored only on this device. We will replace this with secure cloud accounts before public launch.';$('authBtn').textContent=mode==='login'?'LOG IN':'CREATE ACCOUNT';$('authToggle').textContent=mode==='login'?'Need an account? Sign up':'Already have an account? Log in';$('authMsg').textContent='';}
 function toggleAuth(){openAuth(authMode==='login'?'signup':'login')}
 function toggleForgot(show){$('forgotBox').style.display=show?'block':'none';$('authMsg').textContent='';if(show)$('resetEmail').focus()}
-function requestReset(){let email=$('resetEmail').value.trim();if(!email){$('authMsg').textContent='Enter your email first.';return}$('authMsg').textContent='If an account exists for '+email+', reset instructions would be sent to that email. Real email delivery will be enabled with secure cloud authentication.'}
-function submitAuth(){let name=$('authName').value.trim(),email=$('authEmail').value.trim().toLowerCase(),pass=$('authPass').value;if(!email||!pass||(authMode==='signup'&&!name)){ $('authMsg').textContent='Please fill in all required fields.';return }let a=JSON.parse(localStorage.getItem(ACCOUNT_KEY)||'null');if(authMode==='signup'){if(a&&a.email===email){$('authMsg').textContent='An account with this email already exists on this device. Try logging in.';return}localStorage.setItem(ACCOUNT_KEY,JSON.stringify({name:name||email.split('@')[0],email,password:pass}));$('authMsg').textContent='Account created. Your current study map is saved on this device.';setTimeout(()=>go('map'),400)}else{if(!a||a.email!==email||a.password!==pass){$('authMsg').textContent='Those login details do not match this device.';return}$('authMsg').textContent='Logged in!';setTimeout(()=>go('map'),300)}}
+function requestReset()async function submitAuth(){
+  let name=$('authName').value.trim();
+  let email=$('authEmail').value.trim().toLowerCase();
+  let pass=$('authPass').value;
+
+  if(!email||!pass||(authMode==='signup'&&!name)){
+    $('authMsg').textContent='Please fill in all required fields.';
+    return;
+  }
+
+  $('authBtn').disabled=true;
+  $('authMsg').textContent='Please wait...';
+
+  if(authMode==='signup'){
+    const {data,error}=await supabaseClient.auth.signUp({
+      email,
+      password:pass,
+      options:{data:{name}}
+    });
+
+    if(error){
+      $('authMsg').textContent=error.message;
+      $('authBtn').disabled=false;
+      return;
+    }
+
+    localStorage.setItem('priorixName',name);
+    $('authMsg').textContent='Account created! Check your email to confirm your account.';
+
+  }else{
+    const {data,error}=await supabaseClient.auth.signInWithPassword({
+      email,
+      password:pass
+    });
+
+    if(error){
+      $('authMsg').textContent=error.message;
+      $('authBtn').disabled=false;
+      return;
+    }
+
+    localStorage.setItem(
+      'priorixName',
+      data.user.user_metadata?.name || email.split('@')[0]
+    );
+
+    $('authMsg').textContent='Logged in!';
+    setTimeout(()=>go('map'),300);
+  }
+
+  $('authBtn').disabled=false;
+}}
+function submitAuth(){async function submitAuth(){
+  let name=$('authName').value.trim();
+  let email=$('authEmail').value.trim().toLowerCase();
+  let pass=$('authPass').value;
+
+  if(!email||!pass||(authMode==='signup'&&!name)){
+    $('authMsg').textContent='Please fill in all required fields.';
+    return;
+  }
+
+  $('authBtn').disabled=true;
+  $('authMsg').textContent='Please wait...';
+
+  if(authMode==='signup'){
+    const {data,error}=await supabaseClient.auth.signUp({
+      email,
+      password:pass,
+      options:{data:{name}}
+    });
+
+    if(error){
+      $('authMsg').textContent=error.message;
+      $('authBtn').disabled=false;
+      return;
+    }
+
+    localStorage.setItem('priorixName',name);
+    $('authMsg').textContent='Account created! Check your email to confirm your account.';
+
+  }else{
+    const {data,error}=await supabaseClient.auth.signInWithPassword({
+      email,
+      password:pass
+    });
+
+    if(error){
+      $('authMsg').textContent=error.message;
+      $('authBtn').disabled=false;
+      return;
+    }
+
+    localStorage.setItem(
+      'priorixName',
+      data.user.user_metadata?.name || email.split('@')[0]
+    );
+
+    $('authMsg').textContent='Logged in!';
+    setTimeout(()=>go('map'),300);
+  }
+
+  $('authBtn').disabled=false;
+}}
 function renderTopics(){let active=T.filter(t=>!t.done);$('topics').innerHTML=active.length?active.map(t=>`<div class="card"><div class="topicrow"><div><div class="small">${esc(t.subject)}</div><div class="topicname">${esc(t.topic)}</div><div class="small">Exam in ${t.days} day(s) • ${t.hours}h • ${['','Easy','Medium','Hard'][t.diff]} • ${['','High','Medium','Low'][t.conf]}</div></div><button class="x" onclick="removeTopic(${t.id})">✕</button></div><div id="timer-map-${t.id}"></div><label class="checkrow"><input class="check" type="checkbox" onchange="done(${t.id})"><span>Mark as complete</span></label></div>`).join(''):'<div class="card empty"><b>No active topics yet.</b><div class="sub">Add your first topic above.</div></div>';let doneTopics=T.filter(t=>t.done);if(doneTopics.length)$('topics').innerHTML+=`<div class="pinkline"></div><div class="small" style="margin:12px 0 6px">COMPLETED</div>`+doneTopics.map(t=>`<div class="card donecard"><div class="topicrow"><div><div class="small">${esc(t.subject)}</div><div class="topicname">${esc(t.topic)}</div></div><button class="x" onclick="done(${t.id})">↶</button></div><label class="checkrow"><input class="check" type="checkbox" checked onchange="done(${t.id})"><span>Completed</span></label></div>`).join('')}
 let timers={};
 function formatTimer(sec){let m=Math.floor(sec/60),s=sec%60;return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
