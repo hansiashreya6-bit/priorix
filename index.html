@@ -52,59 +52,7 @@ async function requestReset(){
 
   $('authMsg').textContent='If an account exists for this email, a password reset link has been sent.';
 }
-
 async function submitAuth(){
-  let name=$('authName').value.trim();
-  let email=$('authEmail').value.trim().toLowerCase();
-  let pass=$('authPass').value;
-
-  if(!email||!pass||(authMode==='signup'&&!name)){
-    $('authMsg').textContent='Please fill in all required fields.';
-    return;
-  }
-
-  $('authBtn').disabled=true;
-  $('authMsg').textContent='Please wait...';
-
-  if(authMode==='signup'){
-    const {data,error}=await supabaseClient.auth.signUp({
-      email,
-      password:pass,
-      options:{data:{name}}
-    });
-
-    if(error){
-      $('authMsg').textContent=error.message;
-      $('authBtn').disabled=false;
-      return;
-    }
-
-    localStorage.setItem('priorixName',name);
-    $('authMsg').textContent='Account created! Check your email to confirm your account.';
-  }else{
-    const {data,error}=await supabaseClient.auth.signInWithPassword({
-      email,
-      password:pass
-    });
-
-    if(error){
-      $('authMsg').textContent=error.message;
-      $('authBtn').disabled=false;
-      return;
-    }
-
-    localStorage.setItem(
-      'priorixName',
-      data.user.user_metadata?.name || email.split('@')[0]
-    );
-
-    $('authMsg').textContent='Logged in!';
-    setTimeout(()=>go('map'),300);
-  }
-
-  $('authBtn').disabled=false;
-}}
-function submitAuth(){async function submitAuth(){
   let name=$('authName').value.trim();
   let email=$('authEmail').value.trim().toLowerCase();
   let pass=$('authPass').value;
