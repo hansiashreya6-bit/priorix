@@ -105,6 +105,7 @@ function removeTopic(id){T=T.filter(t=>t.id!==id);save();renderTopics();renderWo
 function done(id){let t=T.find(x=>x.id===id);if(t)t.done=!t.done;save();renderTopics();renderWorkload();renderDashboard();}
 function updateUserBadge(){let a=JSON.parse(localStorage.getItem(ACCOUNT_KEY)||'null');$('userBadge').textContent=a?`Hi, ${a.name}`:''}
 function openAuth(mode='signup'){authMode=mode;go('auth');$('forgotBox').style.display='none';$('authTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('authSub').textContent=mode==='login'?'Log in to continue your Priorix study map.':'For this prototype, your account is stored only on this device. We will replace this with secure cloud accounts before public launch.';$('authBtn').textContent=mode==='login'?'LOG IN':'CREATE ACCOUNT';$('authToggle').textContent=mode==='login'?'Need an account? Sign up':'Already have an account? Log in';$('authMsg').textContent='';}
+function skipAuth(){go('map');}
 function toggleAuth(){openAuth(authMode==='login'?'signup':'login')}
 function toggleForgot(show){$('forgotBox').style.display=show?'block':'none';$('authMsg').textContent='';if(show)$('resetEmail').focus()}
 async function requestReset(){
