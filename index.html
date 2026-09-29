@@ -234,7 +234,15 @@ function allocate(list,available){
 
   return {chosen,left:remaining};
 }
-function fmt(h){return h%1===0?h+'h':h.toFixed(2).replace(/0$/,'')+'h'}
+function fmt(h){
+  let totalMinutes=Math.round(Number(h)*60);
+  let hours=Math.floor(totalMinutes/60);
+  let minutes=totalMinutes%60;
+
+  if(hours===0) return minutes+' minutes';
+  if(minutes===0) return hours+(hours===1?' hour':' hours');
+  return hours+(hours===1?' hour':' hours')+' '+minutes+' '+(minutes===1?'minute':'minutes');
+}
 function renderPlan(){let available=Number($('todayHours').value)||2;let a=allocate(sorted(),available);$('planHours').textContent=fmt(available);$('planList').innerHTML=a.chosen.length?a.chosen.map((t,i)=>`<div class="card ${lvl(t.s).toLowerCase()}"><div class="planItem"><div class="num">${i+1}</div><div><div class="pill ${lvl(t.s).toLowerCase()}">${lvl(t.s)}</div><div class="topicname" style="margin-top:6px">${esc(t.topic)}</div><div class="small">${esc(t.subject)}</div><div class="hours" style="margin-top:7px">Study for ${fmt(t.allocated)}</div></div></div><div id="timer-plan-${t.id}"></div><label class="checkrow"><input class="check" type="checkbox" onchange="done(${t.id});renderPlan()"><span>Mark as complete</span></label></div>`).join(''):'<div class="card empty"><b>Your plan is empty.</b><div class="sub">Add some topics first.</div></div>';$('planLeft').innerHTML=a.left>0?`<div class="card"><div class="small">UNUSED TIME</div><b>${fmt(a.left)}</b><div class="sub">You have more time than the current active workload needs.</div></div>`:'';for(let t of a.chosen){renderTimer(t.id,'timer-plan-')}}
 function runWhatIf(){let time=Number($('ifHours').value),change=$('ifChange').value,a=T.filter(t=>!t.done).map(t=>({...t}));if(!time||time>24){alert('Choose between 0.25 and 24 hours.');return}if(change==='finish'&&a.length){let top=sorted()[0];a=a.filter(t=>t.id!==top.id)}let shift=change==='deadline'?-1:0;let list=a.map(t=>({...t,s:score(t,shift)})).sort((x,y)=>y.s-x.s);let out=allocate(list,time);$('whatResult').innerHTML=`<div class="card"><div class="eyebrow">SCENARIO RESULT</div><h2 style="margin-bottom:4px">Your focus changes to:</h2>${out.chosen.length?out.chosen.map((t,i)=>`<div class="card ${lvl(t.s).toLowerCase()}"><b>${i+1}. ${esc(t.topic)}</b><div class="small">${lvl(t.s)} priority • ${fmt(t.allocated)}</div></div>`).join(''):'<div class="sub">Nothing needs scheduling.</div>'}<div class="small" style="margin-top:10px">Your original study map is unchanged.</div></div>`}
 function renderDashboard(){let a=T.filter(t=>!t.done),h=a.reduce((x,t)=>x+t.hours,0),p=sorted(),hi=p.filter(t=>t.s>=17).length;$('dTopics').textContent=a.length;$('dHours').textContent=h%1?h.toFixed(1):h;$('dHigh').textContent=hi;$('next').innerHTML=p.length?`<div class="card ${lvl(p[0].s).toLowerCase()}"><div class="small">YOUR NEXT BEST FOCUS</div><h2>${esc(p[0].topic)}</h2><div class="sub">${esc(p[0].subject)} • ${lvl(p[0].s)} priority • ${p[0].hours}h needed</div></div>`:'<div class="card empty"><b>Your Priorix is empty.</b><div class="sub">Build your study map to get started.</div></div>'}
