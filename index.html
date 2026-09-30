@@ -101,7 +101,39 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;',
 function score(t,shift=0){let urgency=Math.max(1,Math.min(5,6-Math.min(5,t.days+shift)));let d=t.diff*2,c=t.conf,eff=Math.min(3,Math.ceil(t.hours/2));return urgency*2+d+c+eff}
 function lvl(s){return s>=17?'HIGH':s>=12?'MEDIUM':'LOW'}
 function sorted(shift=0){return T.filter(t=>!t.done).map(t=>({...t,s:score(t,shift)})).sort((a,b)=>b.s-a.s)}
-function addTopic(){let subject=$('subject').value.trim(),topic=$('topic').value.trim(),days=Number($('days').value),hours=Number($('hours').value);if(!subject||!topic||!days||!hours||hours>24){alert('Please enter the subject, topic, exam days and study hours (0.25–24).');return}T.push({id:Date.now(),subject,topic,days,hours,diff:Number($('diff').value),conf:Number($('conf').value),done:false});save();$('subject').value='';$('topic').value='';renderTopics();}
+async function addTopic(){
+  const {data:{session}}=await supabaseClient.auth.getSession();
+
+  if(!session){
+    openAuth('signup');
+    return;
+  }
+
+  let subject=$('subject').value.trim(),topic=$('topic').value.trim(),days=Number($('days').value),hours=Number($('hours').value);
+
+  if(!subject||!topic||!days||!hours||hours>24){
+    alert('Please enter the subject, topic, exam days and study hours (0.25–24).');
+    return;
+  }
+
+  T.push({
+    id:Date.now(),
+    subject,
+    topic,
+    days,
+    hours,
+    diff:Number($('diff').value),
+    conf:Number($('conf').value),
+    done:false
+  });
+
+  save();
+  $('subject').value='';
+  $('topic').value='';
+  $('days').value='';
+  $('hours').value='';
+  renderTopics();
+}
 function removeTopic(id){T=T.filter(t=>t.id!==id);save();renderTopics();renderWorkload();renderDashboard()}
 function done(id){let t=T.find(x=>x.id===id);if(t)t.done=!t.done;save();renderTopics();renderWorkload();renderDashboard();}
 function updateUserBadge(){let a=JSON.parse(localStorage.getItem(ACCOUNT_KEY)||'null');$('userBadge').textContent=a?`Hi, ${a.name}`:''}
