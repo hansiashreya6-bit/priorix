@@ -155,26 +155,6 @@ function guestPopupAuth(mode){
   closeGuestPopup();
   openAuth(mode);
 }
-
-async function requireGuestAuth(){
-  const {data:{session},error}=await supabaseClient.auth.getSession();
-
-  if(error || !session){
-    $('guestPopup').style.display='flex';
-    return false;
-  }
-
-  return true;
-}
-
-function closeGuestPopup(){
-  $('guestPopup').style.display='none';
-}
-
-function guestPopupAuth(mode){
-  closeGuestPopup();
-  openAuth(mode);
-}
 function openAuth(mode='signup'){authMode=mode;go('auth');$('forgotBox').style.display='none';$('authTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('authSub').textContent=mode==='login'?'Log in to continue your Priorix study map.':'For this prototype, your account is stored only on this device. We will replace this with secure cloud accounts before public launch.';$('authBtn').textContent=mode==='login'?'LOG IN':'CREATE ACCOUNT';$('authToggle').textContent=mode==='login'?'Need an account? Sign up':'Already have an account? Log in';$('authMsg').textContent='';}
 function skipAuth(){go('map');}
 function toggleAuth(){openAuth(authMode==='login'?'signup':'login')}
