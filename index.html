@@ -105,7 +105,7 @@ async function addTopic(){
   const {data:{session}}=await supabaseClient.auth.getSession();
 
   if(!(await requireGuestAuth())) return;
-  }
+  
 
   let subject=$('subject').value.trim(),topic=$('topic').value.trim(),days=Number($('days').value),hours=Number($('hours').value);
 
