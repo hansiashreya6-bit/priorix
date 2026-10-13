@@ -104,9 +104,7 @@ function sorted(shift=0){return T.filter(t=>!t.done).map(t=>({...t,s:score(t,shi
 async function addTopic(){
   const {data:{session}}=await supabaseClient.auth.getSession();
 
-  if(!session){
-    openAuth('signup');
-    return;
+  if(!(await requireGuestAuth())) return;
   }
 
   let subject=$('subject').value.trim(),topic=$('topic').value.trim(),days=Number($('days').value),hours=Number($('hours').value);
@@ -137,6 +135,46 @@ async function addTopic(){
 function removeTopic(id){T=T.filter(t=>t.id!==id);save();renderTopics();renderWorkload();renderDashboard()}
 function done(id){let t=T.find(x=>x.id===id);if(t)t.done=!t.done;save();renderTopics();renderWorkload();renderDashboard();}
 function updateUserBadge(){let a=JSON.parse(localStorage.getItem(ACCOUNT_KEY)||'null');$('userBadge').textContent=a?`Hi, ${a.name}`:''}
+
+async function requireGuestAuth(){
+  const {data:{session},error}=await supabaseClient.auth.getSession();
+
+  if(error || !session){
+    $('guestPopup').style.display='flex';
+    return false;
+  }
+
+  return true;
+}
+
+function closeGuestPopup(){
+  $('guestPopup').style.display='none';
+}
+
+function guestPopupAuth(mode){
+  closeGuestPopup();
+  openAuth(mode);
+}
+
+async function requireGuestAuth(){
+  const {data:{session},error}=await supabaseClient.auth.getSession();
+
+  if(error || !session){
+    $('guestPopup').style.display='flex';
+    return false;
+  }
+
+  return true;
+}
+
+function closeGuestPopup(){
+  $('guestPopup').style.display='none';
+}
+
+function guestPopupAuth(mode){
+  closeGuestPopup();
+  openAuth(mode);
+}
 function openAuth(mode='signup'){authMode=mode;go('auth');$('forgotBox').style.display='none';$('authTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('authSub').textContent=mode==='login'?'Log in to continue your Priorix study map.':'For this prototype, your account is stored only on this device. We will replace this with secure cloud accounts before public launch.';$('authBtn').textContent=mode==='login'?'LOG IN':'CREATE ACCOUNT';$('authToggle').textContent=mode==='login'?'Need an account? Sign up':'Already have an account? Log in';$('authMsg').textContent='';}
 function skipAuth(){go('map');}
 function toggleAuth(){openAuth(authMode==='login'?'signup':'login')}
@@ -281,4 +319,16 @@ function renderPlan(){let available=Number($('todayHours').value)||2;let a=alloc
 function runWhatIf(){let time=Number($('ifHours').value),change=$('ifChange').value,a=T.filter(t=>!t.done).map(t=>({...t}));if(!time||time>24){alert('Choose between 0.25 and 24 hours.');return}if(change==='finish'&&a.length){let top=sorted()[0];a=a.filter(t=>t.id!==top.id)}let shift=change==='deadline'?-1:0;let list=a.map(t=>({...t,s:score(t,shift)})).sort((x,y)=>y.s-x.s);let out=allocate(list,time);$('whatResult').innerHTML=`<div class="card"><div class="eyebrow">SCENARIO RESULT</div><h2 style="margin-bottom:4px">Your focus changes to:</h2>${out.chosen.length?out.chosen.map((t,i)=>`<div class="card ${lvl(t.s).toLowerCase()}"><b>${i+1}. ${esc(t.topic)}</b><div class="small">${lvl(t.s)} priority • ${fmt(t.allocated)}</div></div>`).join(''):'<div class="sub">Nothing needs scheduling.</div>'}<div class="small" style="margin-top:10px">Your original study map is unchanged.</div></div>`}
 function renderDashboard(){let a=T.filter(t=>!t.done),h=a.reduce((x,t)=>x+t.hours,0),p=sorted(),hi=p.filter(t=>t.s>=17).length;$('dTopics').textContent=a.length;$('dHours').textContent=h%1?h.toFixed(1):h;$('dHigh').textContent=hi;$('next').innerHTML=p.length?`<div class="card ${lvl(p[0].s).toLowerCase()}"><div class="small">YOUR NEXT BEST FOCUS</div><h2>${esc(p[0].topic)}</h2><div class="sub">${esc(p[0].subject)} • ${lvl(p[0].s)} priority • ${p[0].hours}h needed</div></div>`:'<div class="card empty"><b>Your Priorix is empty.</b><div class="sub">Build your study map to get started.</div></div>'}
 renderTopics();renderAllTimers();renderDashboard();
-</script></body></html>
+</script>
+<div id="guestPopup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(2,8,24,.82);backdrop-filter:blur(7px);align-items:center;justify-content:center;padding:20px">
+  <div style="width:min(100%,380px);background:#071226;border:1px solid #ff2b8a;border-radius:20px;padding:26px;text-align:center;color:#fff;box-shadow:0 20px 70px rgba(0,0,0,.4)">
+    <div style="font-size:13px;letter-spacing:3px;color:#ff2b8a;font-weight:800">PRIORIX</div>
+    <h2 style="margin:14px 0 8px">Your plan, your progress.</h2>
+    <p style="color:#b8c1d5;font-size:14px;line-height:1.6;margin-bottom:22px">Create an account or log in to use this feature and keep working on your study plan.</p>
+    <button class="btn" onclick="guestPopupAuth('signup')">SIGN UP</button>
+    <button class="btn alt" style="margin-top:10px" onclick="guestPopupAuth('login')">LOG IN</button>
+    <button class="btn ghost" style="margin-top:10px" onclick="closeGuestPopup()">MAYBE LATER</button>
+  </div>
+</div>
+</body>
+</html>
